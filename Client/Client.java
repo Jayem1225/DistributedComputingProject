@@ -10,17 +10,21 @@ import javax.imageio.ImageIO;
 	   	final static int SOCKET = 1;
 	   	final static int HOSTNAME = 2;
 
+	   	static DatagramSocket dataSocket;
 	   	static Socket serverSocket;
 	   	static BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
 		static BufferedReader serverInput;
 		static PrintWriter serverOutput;
-    	
+		static boolean serverConnected;
+		
+		// Handles initial connection to peer server
     	private static Socket connectToServer() throws IOException {
     		Socket socket;
+    		
 			System.out.println("Please enter the hostname of the server: ");
-			String hostName = userInput.readLine();
+			String hostName = getUserInput();
 			System.out.println("Please enter the socket for connection to " + hostName + ": ");
-		    int socketNum = Integer.parseInt(userInput.readLine());
+		    int socketNum = Integer.parseInt(getUserInput());
     		System.out.println("Attempting to connect to server " + hostName + " on port number " + socketNum + "... ");
     		
     		// Tries to connect to the ServerRouter
@@ -40,25 +44,51 @@ import javax.imageio.ImageIO;
             return socket;
     	}
     	
-    	private static String[] getPeerData(String peerUsername) throws IOException{
+    	// Assists in capturing input from the user.
+    	private static String getUserInput() {
+    		try {
+    			return userInput.readLine();
+    		}
+    		catch (IOException e) {
+    			System.err.println("FATAL ERROR: Could not read from standard input");
+    			System.err.println("Aborting program...");
+    			System.exit(0);
+    			return null;
+    		}
+    	}
+    	
+    	// Gets peer connection data from server
+    	private static String[] getPeerData(String peerUsername) {
     		String[] connectData = new String[3];
     		
-    		serverOutput.println(peerUsername);// initial send (IP of the destination Server)
-    		connectData[IP] = serverInput.readLine();//receives the IP from the ServerRouter
-    		System.out.println("IP: " + connectData[IP]);
-    		connectData[SOCKET] = serverInput.readLine(); //receives the Socket from the ServerRouter
-			System.out.println("Socket: " + connectData[SOCKET]);
-			connectData[HOSTNAME] = serverInput.readLine(); //receives the HostName from the ServerRouter
-			System.out.println("Host Name: " + connectData[HOSTNAME]);
+    		try {
+    			serverOutput.println(peerUsername);// initial send (IP of the destination Server)
+    			connectData[IP] = getUserInput();//receives the IP from the ServerRouter
+    		
+    			// If server could not find user, return null array
+    			if (connectData[IP].equals("DNF"))
+    				return null;
+    		
+    			connectData[SOCKET] = serverInput.readLine(); //receives the Socket from the ServerRouter
+    			connectData[HOSTNAME] = serverInput.readLine(); //receives the HostName from the ServerRouter
+    		}
+    		catch (IOException e) {
+    			System.err.println("Fatal error! Server connection lost!");
+    			serverConnected = false;
+    		}
+			//System.out.println("IP: " + connectData[IP]);
+			//System.out.println("Socket: " + connectData[SOCKET]);
+			//System.out.println("Host Name: " + connectData[HOSTNAME]);
     		
 			return connectData;
     	}
     	
+    	// Sends image file to user connected to socket.
     	private static void sendImage(File file, DatagramSocket socket) {
     		try {
     			System.out.println("Attempting to send file " + file.getName());
     			if (!file.exists())
-    				throw new IOException("File does not exist!");
+    				throw new IOException("File does not exist!");    			
     			BufferedImage img = ImageIO.read(file);
         		ByteArrayOutputStream out = new ByteArrayOutputStream();
         		ImageIO.write(img, file.getName().substring(file.getName().lastIndexOf('.') + 1), out);
@@ -70,9 +100,61 @@ import javax.imageio.ImageIO;
         		System.out.println("File sent to " + clientSocket.getLocalAddress() + " on port number " + clientSocket.getLocalPort());
     		}
     		catch (IOException e) {
-    			System.err.println("Couldn't find file at path " + file.getAbsolutePath());
+    			if (e.getMessage().equals("File does not exist!"))
+    				System.err.println("Couldn't find file at path " + file.getAbsolutePath());
+    			else
+    				System.err.println("Couldn't connect to peer at " + socket.getLocalAddress());
     			return;
     		}
+    	}
+
+    	// Handles capturing data from the user and calls methods to send file to a user.
+    	private static void findAndSendImageToUser() {
+    		String[] connectInfo = new String[3];
+    		File file;
+    		
+    		try {
+    			System.out.println("To whom would you like to send a file? ");
+    			connectInfo = getPeerData(getUserInput());
+    		
+    			if (!serverConnected) {
+    				System.err.println("Could not send file; please reconnect to server.");
+    				return;
+    			}
+    			
+    			System.out.println("Enter the path and file name of the file you'd like to send: ");
+    			file = new File(getUserInput());
+    			
+    			dataSocket = new DatagramSocket();
+    			dataSocket.connect(InetAddress.getByName(connectInfo[HOSTNAME]), Integer.parseInt(connectInfo[SOCKET]));
+    			sendImage(file, dataSocket);
+ 
+    			dataSocket.close();
+    			System.out.println("Image sent! ");
+    		}
+    		catch (Exception e) {
+    			System.err.println("Problem connecting to peer! ");
+    			System.err.println("Maybe peer is not available? ");
+    		}
+    	}
+    	
+    	//Print Methods
+    	private static void printSystemInfo() throws UnknownHostException {
+    		System.out.println();
+    		System.out.println(" SYSTEM INFO ");
+    		System.out.println("=============");
+    		System.out.println("Hostname:\t" + serverSocket.getInetAddress().getCanonicalHostName());
+    		System.out.println("Socket:\t" + serverSocket.getPort());
+    		System.out.println();
+    	}
+    	
+    	private static void printServerInfo() throws UnknownHostException {
+    		System.out.println();
+    		System.out.println(" SERVER INFO ");
+    		System.out.println("=============");
+    		System.out.println("Hostname:\t" + InetAddress.getLocalHost().getCanonicalHostName());
+    		System.out.println("Socket:\t" + dataSocket.getLocalPort());
+    		System.out.println();
     	}
     	
     	private static void printMenu() {
@@ -88,86 +170,75 @@ import javax.imageio.ImageIO;
     	}
     	
     	public static void main(String[] args) throws IOException {
-    		File file;
-    		String[] peerConnectionData = new String[3];
     		String username;
     		boolean done = false; // Helps track program state
+    		serverConnected = false;
     	   
     		// Welcome
     		System.out.println("Welcome to Image sender pro!");
     		System.out.println("Please enter a username: ");
-    		username = userInput.readLine();
+    		username = getUserInput();
     		System.out.println("Hello, " + username + "! ");
     		
     		// Establish Server Connection
     		System.out.println("Before you can send files, you must establish connection to a server.");
     		while (!done) {
-    		    serverSocket = connectToServer();
-    		    
-    		    if (serverSocket == null) {
-    		    	System.out.println("Connection Failed!");
-    		    	System.out.println("Ensure server crudentials are correct and try again.");
-    		    }
-    		    else {
-    		    	try {
-    		    		serverInput = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
-    		    		serverOutput = new PrintWriter(serverSocket.getOutputStream());
-
-    		    		// Give server username for server record
-        		    	serverOutput.println(username);
-        		    	done = true;
-    		    	}
-    		    	catch (IOException e) {
-    		    		System.err.println("Fatal Error: Lost connection to Server!");
-    		    		System.err.println("Please try to re-establish connection. ");
-    		    	}
-    		    }
-    		}
-    		done = false;
+    			while(!serverConnected) {
+	    		    serverSocket = connectToServer();
+	    		    
+	    		    if (serverSocket == null) {
+	    		    	System.out.println("Connection Failed!");
+	    		    	System.out.println("Ensure server crudentials are correct and try again.");
+	    		    }
+	    		    else {
+	    		    	try {
+	    		    		serverInput = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
+	    		    		serverOutput = new PrintWriter(serverSocket.getOutputStream());
+	
+	    		    		// Give server username for server record
+	        		    	serverOutput.println(username);
+	        		    	serverConnected = true;
+	    		    	}
+	    		    	catch (IOException e) {
+	    		    		System.err.println("Fatal Error: Lost connection to Server!");
+	    		    		System.err.println("Please try to re-establish connection. ");
+	    		    	}
+	    		    }
+	    		}
     	   
-    		// Menu
-    		while (!done) {
+    			// Menu
     			printMenu();
-    			switch ( Integer.parseInt(userInput.readLine()) ) {
+    			switch ( Integer.parseInt(getUserInput()) ) {
     			case 1:
     				// Send file to user
+    				findAndSendImageToUser();
     				break;
     			case 2:
     				// Print system connection info
+    				printSystemInfo();
     				break;
     			case 3:
     				// Print server connection info
+    				try {
+    					printServerInfo();
+    				}
+    				catch (IOException e) {
+    					serverConnected = false;
+    				}
     				break;
     			case 4:
     				// Exit program
+    				System.out.println();
+    				System.out.println("Goodbye!");
     				done = true;
     				break;
     			}
     		}
-
-    		/*
-			// Variables for message passing	
-			Reader reader = new FileReader("file.txt"); 
-			BufferedReader fromFile =  new BufferedReader(reader); // reader for the string file
-			String fromServer, fromServer2, fromServer3; // messages received from ServerRouter
-			String fromUser; // messages sent to ServerRouter
-			String userName ="Bob"; // destination IP (Server)
-			long t0, t1, t;
-			
-			// Communication process (initial sends/receives
-			out.println("Fred");
-			out.println(userName);// initial send (IP of the destination Server)
-			fromServer = in.readLine();//receives the IP from the ServerRouter
-			System.out.println("IP: " + fromServer);
-			fromServer2 = in.readLine(); //receives the Socket from the ServerRouter
-			System.out.println("Socket: " + fromServer2);
-			fromServer3 = in.readLine(); //receives the HostName from the ServerRouter
-			System.out.println("Host Name: " + fromServer3);
-			*/
     		
 			// closing connections
-			serverOutput.close();
+    		dataSocket.close();
 			serverInput.close();
+			serverOutput.close();
 			serverSocket.close();
       }	
    }
