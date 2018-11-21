@@ -1,7 +1,7 @@
 	import java.net.*;
    import java.io.*;
 
-    public class TCPServerRouter {
+    public class Server {
        public static void main(String[] args) throws IOException {
          Socket clientSocket = null; // socket for the thread
          Object [][] RoutingTable = new Object [100][3]; // routing table
