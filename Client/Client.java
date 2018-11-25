@@ -175,7 +175,7 @@ import javax.imageio.ImageIO;
     		serverConnected = false;
     	   
     		// Welcome
-    		System.out.println("Welcome to Image sender pro!");
+    		System.out.println("Welcome to Image Sender Pro!");
     		System.out.println("Please enter a username: ");
     		username = getUserInput();
     		System.out.println("Hello, " + username + "! ");

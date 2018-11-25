@@ -6,9 +6,11 @@ import java.lang.Exception;
 public class SThread extends Thread 
 {
 	// Constants
-	final int IP = 0;
-   	final int SOCKET = 1;
-   	final int USERNAME = 2;
+	final int IP = Server.IP;
+   	final int SOCKET = Server.SOCKET;
+   	final int USERNAME = Server.USERNAME;
+   	final String SERVER_ID = Server.SERVER_ID;
+   	final String REMOVED_ENTRY = "__DELETED__";
    	final String DNF = "DNF";
    	
 	private Object [][] RTable; // routing table
