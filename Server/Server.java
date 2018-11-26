@@ -30,6 +30,7 @@ public class Server {
 	}
 
 	private static void connectToServer() {
+		PrintWriter serverOutput;
 		String serverHostname;
 		int serverSocketNumber;
 		

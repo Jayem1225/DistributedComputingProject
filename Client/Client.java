@@ -16,6 +16,7 @@ import javax.imageio.ImageIO;
 		static BufferedReader serverInput;
 		static PrintWriter serverOutput;
 		static boolean serverConnected;
+		static String username;
 		
 		// Handles initial connection to peer server
     	private static Socket connectToServer() throws IOException {
@@ -28,9 +29,7 @@ import javax.imageio.ImageIO;
     		System.out.println("Attempting to connect to server " + hostName + " on port number " + socketNum + "... ");
     		
     		// Tries to connect to the ServerRouter
-            try {
-            	socket = new Socket(hostName, socketNum);
-            } 
+            try { socket = new Socket(hostName, socketNum); } 
             catch (UnknownHostException e) {
             	System.err.println("Don't know about device: " + hostName);
                 return null;
@@ -43,7 +42,29 @@ import javax.imageio.ImageIO;
             System.out.println("Connection Successful!");
             return socket;
     	}
-    	
+
+    	private static void initializeServerConnection() {
+			try { serverSocket = connectToServer(); }
+	    	catch (IOException e){
+		    	System.out.println("Connection Failed!");
+		    	System.out.println("Ensure server crudentials are correct and try again.");
+		    	return;
+	    	}
+	    	try {
+	    		serverInput = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
+	    		serverOutput = new PrintWriter(serverSocket.getOutputStream());
+
+		    	// Give server username for server record
+    		   	serverOutput.println(username);
+    		   	serverConnected = true;
+		    }
+		    catch (IOException e) {
+		    	System.err.println("Fatal Error: Lost connection to Server!");
+		    	System.err.println("Please try to re-establish connection. ");
+		    	return;
+		    }
+    	}
+		
     	// Assists in capturing input from the user.
     	private static String getUserInput() {
     		try {
@@ -170,7 +191,6 @@ import javax.imageio.ImageIO;
     	}
     	
     	public static void main(String[] args) throws IOException {
-    		String username;
     		boolean done = false; // Helps track program state
     		serverConnected = false;
     	   
@@ -183,28 +203,9 @@ import javax.imageio.ImageIO;
     		// Establish Server Connection
     		System.out.println("Before you can send files, you must establish connection to a server.");
     		while (!done) {
-    			while(!serverConnected) {
-	    		    serverSocket = connectToServer();
-	    		    
-	    		    if (serverSocket == null) {
-	    		    	System.out.println("Connection Failed!");
-	    		    	System.out.println("Ensure server crudentials are correct and try again.");
-	    		    }
-	    		    else {
-	    		    	try {
-	    		    		serverInput = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
-	    		    		serverOutput = new PrintWriter(serverSocket.getOutputStream());
-	
-	    		    		// Give server username for server record
-	        		    	serverOutput.println(username);
-	        		    	serverConnected = true;
-	    		    	}
-	    		    	catch (IOException e) {
-	    		    		System.err.println("Fatal Error: Lost connection to Server!");
-	    		    		System.err.println("Please try to re-establish connection. ");
-	    		    	}
-	    		    }
-	    		}
+
+    			while (!serverConnected)
+    				initializeServerConnection();
     	   
     			// Menu
     			printMenu();
