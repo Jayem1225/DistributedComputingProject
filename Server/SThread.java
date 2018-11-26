@@ -47,9 +47,16 @@ public class SThread extends Thread
 	// Returns record of client data from remote server
 	// Returns DNF if a record could not be found remotely
 	private String[] searchForUserRemotely(String username) {
-		String[] record = new String[3];
+		String[] record = { DNF, null, null };
 
-		// TODO
+		for (int i=0; i<RTable.length && record[0].equals(DNF); ++i)
+			if ( ((String)RTable[i][USERNAME]).equals(SERVER_ID) ) {
+				try { record = requestDataFromExternalServer((Socket)RTable[i][SOCKET], username); }
+				catch (IOException e) {
+					System.err.println("Lost connection to an external server... Closing connection. ");
+					RTable[i][USERNAME] = REMOVED_ENTRY;
+				}
+			}
 		
 		return record;
 	}
@@ -81,6 +88,21 @@ public class SThread extends Thread
 		return false;
 	}
 	
+	private String[] requestDataFromExternalServer(Socket serverSocket, String username) throws IOException {
+		String[] record = new String[3];
+		BufferedReader serverInput = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
+		PrintWriter serverOutput = new PrintWriter(serverSocket.getOutputStream());
+		
+		serverOutput.println(username);
+		record[0] = serverInput.readLine();
+		if (record[0].equals(DNF))
+			return record;
+		record[1] = serverInput.readLine();
+		record[2] = serverInput.readLine();
+		
+		return record;
+	}
+	
 	private void writeDNF() throws IOException {
 		out.println(DNF);
 	}
@@ -97,56 +119,25 @@ public class SThread extends Thread
 		out.println(userRecord[1]);
 		out.println(userRecord[2]);
 	}
-	
-//	private void writeClientData(String ip, Socket socket) throws IOException {
-//	   	out.println(ip);
-//	   	out.println(socket.getPort());
-//	   	out.println(socket.getInetAddress().getHostName());
-//	}
-//   
-//	private void writeClientData(String ip_in, String socket_in, String hostname_in) throws IOException {
-//	   	out.println(ip_in);
-//	   	out.println(socket_in);
-//	   	out.println(hostname_in);
-//	}
-//   
-//	// Deprecated...?
-//	private void forwardClientData(String response, BufferedReader inFromServer) throws IOException {
-//	   	if (response.equals(DNF))
-//	   		return;
-//         
-//	   	String client_ipAddress = response;
-//	   	String client_socket = inFromServer.readLine();
-//	   	String client_hostname = inFromServer.readLine();
-//      
-//	   	writeClientData(client_ipAddress, client_socket, client_hostname);
-//	}
    
 	// Run method (will run for each machine that connects to the ServerRouter)
 	public void run() {
 		try {
-		// Initial sends/receives
-		user = in.readLine(); // initial read (the destination for writing)
-		System.out.println("Searching for " + user);
+			// Initial sends/receives
+			user = in.readLine(); // initial read (the destination for writing)
+			System.out.println("Searching for " + user);
 		}
 		catch(IOException e) {
-         System.out.println("No input");
+			System.out.println("No input");
 		}
 		
 		// waits 10 seconds to let the routing table fill with all machines' information
-		try {
-    		Thread.currentThread().sleep(10000); 
-		}
-		catch(InterruptedException ie){
-			System.out.println("Thread interrupted");
-		}
+		try { Thread.currentThread().sleep(10000); }
+		catch(InterruptedException ie){	System.out.println("Thread interrupted"); }
 		
 		// loops through the routing table to find the destination
 		try { searchForUserAndSendData(user); }
-		catch (IOException e) {
-			System.out.println("FATAL ERROR: Could not write to client! ");
-		}
-		
+		catch (IOException e) { System.out.println("FATAL ERROR: Could not write to client! "); }
 	}
 }
 

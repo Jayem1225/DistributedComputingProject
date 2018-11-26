@@ -61,6 +61,7 @@ import javax.imageio.ImageIO;
 		    catch (IOException e) {
 		    	System.err.println("Fatal Error: Lost connection to Server!");
 		    	System.err.println("Please try to re-establish connection. ");
+		    	serverConnected = false;
 		    	return;
 		    }
     	}
