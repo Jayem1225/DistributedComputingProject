@@ -2,7 +2,6 @@ import java.io.*;
 import java.net.*;
 import java.lang.Exception;
 
-	
 public class SThread extends Thread 
 {
 	// Constants

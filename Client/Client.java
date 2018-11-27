@@ -16,6 +16,7 @@ import javax.imageio.ImageIO;
 		static BufferedReader serverInput;
 		static PrintWriter serverOutput;
 		static boolean serverConnected;
+		static int dataPort;
 		static String username;
 		
 		// Handles initial connection to peer server
@@ -200,6 +201,14 @@ import javax.imageio.ImageIO;
     		System.out.println("Please enter a username: ");
     		username = getUserInput();
     		System.out.println("Hello, " + username + "! ");
+    		
+    		// Spawn thread to listen for incoming files
+    		System.out.println("What port would you like peers to send you files through?");
+    		dataPort = Integer.parseInt(getUserInput());
+    		dataSocket = new DatagramSocket(dataPort);
+    		CThread t = new CThread(dataSocket);
+    		t.start();
+    		System.out.println("Port " + dataSocket.getPort() + " ready to receive files from peers. ");
     		
     		// Establish Server Connection
     		System.out.println("Before you can send files, you must establish connection to a server.");
