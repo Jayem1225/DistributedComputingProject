@@ -9,6 +9,7 @@ public class Server {
    	final static String SERVER_ID = "__SERVER__";
    	
    	static boolean serverConnected;
+	static boolean running;
     static int socketNumber;
     static int index;
     static Object [][] RoutingTable;
@@ -133,8 +134,8 @@ public class Server {
 		System.out.println("Before the server can begin listening for connections, ");
 		System.out.println("Please fill out the following information for you server. ");
 		System.out.println("What socket number would you like to use for new connections? ");
-		socketNumber = Integer.parseInt(getUserInput());
-		
+		socketNumber = Integer.parseInt(getUserInput());		
+
 		// Menu
 		printMenu();
 		switch ( Integer.parseInt(getUserInput()) ) {
@@ -152,6 +153,7 @@ public class Server {
 			break;
 		case 4:
 			// Start service
+			running = true;
 			listenForConnections();
 			break;
 		case 5:
@@ -160,6 +162,8 @@ public class Server {
 			System.out.println("Goodbye!");
 			break;
 		}
+
+		running = false;
 
 		//closing connections
 		clientSocket.close();

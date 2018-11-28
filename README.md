@@ -1,5 +1,5 @@
-## All code written by Jacob Martinez ##
-========================================
+## All code written by Nick Curtin, Jacob Martinez, and Josh Sanyika ##
+=======================================================================
 
 To use, designate at least one server and at least two clients.
 

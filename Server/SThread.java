@@ -14,8 +14,8 @@ public class SThread extends Thread
    	final String DNF = "DNF";
    	
 	private Object [][] RTable; // routing table
-	private PrintWriter out, outServer; // writers (for writing back to the machine and to destination)
-	private BufferedReader in, inServer; // reader (for reading from the machine connected to)
+	private PrintWriter out; // writers (for writing back to the machine and to destination)
+	private BufferedReader in; // reader (for reading from the machine connected to)
 	private String inputLine, outputLine, user, addr; // communication strings
 	private Socket outSocket; // socket for communicating with a destination
 	private int ind; // index in the routing table
@@ -28,9 +28,9 @@ public class SThread extends Thread
 		addr = toClient.getInetAddress().getHostAddress();
 		RTable[index][IP] = addr; // IP addresses 
 		RTable[index][SOCKET] = toClient; // sockets for communication
-        RTable[index][USERNAME] = in.readLine();
-        System.out.println(RTable[index][USERNAME]);
-        ind = index;
+        	RTable[index][USERNAME] = in.readLine();
+        	System.out.println(RTable[index][USERNAME]);
+        	ind = index;
 	}
 	
 	// Returns the index of the record client is searching for.
@@ -91,7 +91,7 @@ public class SThread extends Thread
 	private String[] requestDataFromExternalServer(Socket serverSocket, String username) throws IOException {
 		String[] record = new String[3];
 		BufferedReader serverInput = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
-		PrintWriter serverOutput = new PrintWriter(serverSocket.getOutputStream());
+		PrintWriter serverOutput = new PrintWriter(serverSocket.getOutputStream(), true);
 		
 		serverOutput.println(username);
 		record[0] = serverInput.readLine();
@@ -122,22 +122,25 @@ public class SThread extends Thread
    
 	// Run method (will run for each machine that connects to the ServerRouter)
 	public void run() {
-		try {
-			// Initial sends/receives
-			user = in.readLine(); // initial read (the destination for writing)
-			System.out.println("Searching for " + user);
+		while (Server.running) {
+			try {
+				// Initial sends/receives
+				Thread.currentThread().sleep(1000);
+				user = in.readLine(); // initial read (the destination for writing)
+				System.out.println("Searching for " + user);
+			}
+			catch(IOException e) {
+				System.out.println("No input");
+			}
+			
+			// waits 10 seconds to let the routing table fill with all machines' information
+			try { Thread.currentThread().sleep(10000); }
+			catch(InterruptedException ie){	System.out.println("Thread interrupted"); }
+			
+			// loops through the routing table to find the destination
+			try { searchForUserAndSendData(user); }
+			catch (IOException e) { System.out.println("FATAL ERROR: Could not write to client! "); }
 		}
-		catch(IOException e) {
-			System.out.println("No input");
-		}
-		
-		// waits 10 seconds to let the routing table fill with all machines' information
-		try { Thread.currentThread().sleep(10000); }
-		catch(InterruptedException ie){	System.out.println("Thread interrupted"); }
-		
-		// loops through the routing table to find the destination
-		try { searchForUserAndSendData(user); }
-		catch (IOException e) { System.out.println("FATAL ERROR: Could not write to client! "); }
 	}
 }
 

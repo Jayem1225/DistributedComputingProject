@@ -1,8 +1,6 @@
-   import java.awt.image.BufferedImage;
-   import java.io.*;
-   import java.net.*;
-
-import javax.imageio.ImageIO;
+import java.io.*;
+import java.net.*;
+import java.nio.file.Files;
 
     public class Client {
 		// Constants
@@ -15,9 +13,12 @@ import javax.imageio.ImageIO;
 	   	static BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
 		static BufferedReader serverInput;
 		static PrintWriter serverOutput;
+                static boolean done;
 		static boolean serverConnected;
 		static String username;
-		
+                static Metrics metrics;
+		static Metrics sendMetrics;		
+
 		// Handles initial connection to peer server
     	private static Socket connectToServer() throws IOException {
     		Socket socket;
@@ -47,12 +48,12 @@ import javax.imageio.ImageIO;
 			try { serverSocket = connectToServer(); }
 	    	catch (IOException e){
 		    	System.out.println("Connection Failed!");
-		    	System.out.println("Ensure server crudentials are correct and try again.");
+		    	System.out.println("Ensure server credentials are correct and try again.");
 		    	return;
 	    	}
 	    	try {
 	    		serverInput = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
-	    		serverOutput = new PrintWriter(serverSocket.getOutputStream());
+	    		serverOutput = new PrintWriter(serverSocket.getOutputStream(), true);
 
 		    	// Give server username for server record
     		   	serverOutput.println(username);
@@ -105,35 +106,41 @@ import javax.imageio.ImageIO;
 			return connectData;
     	}
     	
-    	// Sends image file to user connected to socket.
-    	private static void sendImage(File file, DatagramSocket socket) {
-    		try {
-    			System.out.println("Attempting to send file " + file.getName());
-    			if (!file.exists())
-    				throw new IOException("File does not exist!");    			
-    			BufferedImage img = ImageIO.read(file);
-        		ByteArrayOutputStream out = new ByteArrayOutputStream();
-        		ImageIO.write(img, file.getName().substring(file.getName().lastIndexOf('.') + 1), out);
-        		out.flush();
-        		byte[] buffer = out.toByteArray();
-        		DatagramSocket clientSocket = socket;
-        		DatagramPacket packet = new DatagramPacket(buffer, buffer.length, socket.getLocalAddress(), socket.getLocalPort());
-        		clientSocket.send(packet);
-        		System.out.println("File sent to " + clientSocket.getLocalAddress() + " on port number " + clientSocket.getLocalPort());
-    		}
-    		catch (IOException e) {
-    			if (e.getMessage().equals("File does not exist!"))
-    				System.err.println("Couldn't find file at path " + file.getAbsolutePath());
-    			else
-    				System.err.println("Couldn't connect to peer at " + socket.getLocalAddress());
-    			return;
-    		}
-    	}
+    	// Sends file to user connected to socket.
+    	private static void sendFile(String[] aHost ) throws Exception {
+
+    		int port = Integer.parseInt(aHost[SOCKET]);
+    		ServerThread st = new ServerThread(port);
+			st.start();
+			InetAddress ip = InetAddress.getByName(aHost[IP]);
+			Socket s = new Socket(ip, port);
+			s.setSoTimeout(15000);
+			InputStream is = s.getInputStream();
+			sendMetrics.start(); //Start capturing send time
+			byte[] fileDataBuffer = new byte[256];
+			is.read(fileDataBuffer, 0, fileDataBuffer.length);
+			String metadata = new String(fileDataBuffer, 0, fileDataBuffer.length);
+			String[] fileData = metadata.split(",");
+			String nameOfFile = fileData[0];
+			String TypeOfFile = fileData[1];
+			String SizeOfFile = fileData[2];
+
+			byte[] dataBuffer = new byte[1024];
+			FileOutputStream os = new FileOutputStream("C:\\Users\\ncurtin\\Desktop\\outputfolder\\"+ nameOfFile);
+			int status = is.read(dataBuffer);
+			while(status != -1){
+				os.write(dataBuffer);
+				dataBuffer = new byte[1024];
+				status = is.read(dataBuffer);
+			}
+			sendMetrics.end(); // Stop capturing send time
+         os.close();
+         System.out.println("It took exactly " + overallTime + " nano seconds to send " + nameOfFile);
+		}
 
     	// Handles capturing data from the user and calls methods to send file to a user.
-    	private static void findAndSendImageToUser() {
+    	private static void findAndSendFileToUser() {
     		String[] connectInfo = new String[3];
-    		File file;
     		
     		try {
     			System.out.println("To whom would you like to send a file? ");
@@ -143,22 +150,15 @@ import javax.imageio.ImageIO;
     				System.err.println("Could not send file; please reconnect to server.");
     				return;
     			}
-    			
-    			System.out.println("Enter the path and file name of the file you'd like to send: ");
-    			file = new File(getUserInput());
-    			
-    			dataSocket = new DatagramSocket();
-    			dataSocket.connect(InetAddress.getByName(connectInfo[HOSTNAME]), Integer.parseInt(connectInfo[SOCKET]));
-    			sendImage(file, dataSocket);
- 
-    			dataSocket.close();
-    			System.out.println("Image sent! ");
+				sendFile(connectInfo);
+    			System.out.println("File sent! ");
     		}
     		catch (Exception e) {
     			System.err.println("Problem connecting to peer! ");
     			System.err.println("Maybe peer is not available? ");
     		}
     	}
+
     	
     	//Print Methods
     	private static void printSystemInfo() throws UnknownHostException {
@@ -192,7 +192,10 @@ import javax.imageio.ImageIO;
     	}
     	
     	public static void main(String[] args) throws IOException {
-    		boolean done = false; // Helps track program state
+    		done = false; // Helps track program state
+                serverConnect = false;
+                metrics = new Metrics();
+                sendMetrics = metrics.SendDataMetrics();
     		serverConnected = false;
     	   
     		// Welcome
@@ -213,7 +216,7 @@ import javax.imageio.ImageIO;
     			switch ( Integer.parseInt(getUserInput()) ) {
     			case 1:
     				// Send file to user
-    				findAndSendImageToUser();
+    				findAndSendFileToUser();
     				break;
     			case 2:
     				// Print system connection info
@@ -235,10 +238,11 @@ import javax.imageio.ImageIO;
     				done = true;
     				break;
     			}
-    		}
-    		
+    		}  
+ 	                sendMetrics.gatherData("clientSendData.txt");
+  
 			// closing connections
-    		dataSocket.close();
+    			dataSocket.close();
 			serverInput.close();
 			serverOutput.close();
 			serverSocket.close();
