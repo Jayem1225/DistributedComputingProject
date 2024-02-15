@@ -23,13 +23,15 @@ public class SThread extends Thread
 	SThread(Object [][] Table, Socket toClient, int index) throws IOException {
 		out = new PrintWriter(toClient.getOutputStream(), true);
 		in = new BufferedReader(new InputStreamReader(toClient.getInputStream()));
-		RTable = Table;
 		addr = toClient.getInetAddress().getHostAddress();
+		
+		RTable = Table;
 		RTable[index][IP] = addr; // IP addresses 
 		RTable[index][SOCKET] = toClient; // sockets for communication
-        RTable[index][USERNAME] = in.readLine();
-        System.out.println(RTable[index][USERNAME]);
-        ind = index;
+        	RTable[index][USERNAME] = in.readLine();	
+		System.out.println(RTable[index][USERNAME]);
+        
+		ind = index;
 	}
 	
 	// Returns the index of the record client is searching for.
@@ -38,9 +40,9 @@ public class SThread extends Thread
 		for ( int i=0; RTable[i][USERNAME]!=null && i<RTable.length; i++)
 			if (RTable[i][USERNAME].equals(username))
 				return i;
-
+		
 		// Could not find index
-	    return -1;
+		return -1;
 	}
 	
 	// Returns record of client data from remote server
@@ -109,8 +111,8 @@ public class SThread extends Thread
 	private void writeClientData(int localTableIndex) {
 		int i = localTableIndex;
 		out.println(RTable[i][IP]);
-		out.println( ((Socket)RTable[i][SOCKET]).getPort());
-		out.println( ((Socket)RTable[i][SOCKET]).getInetAddress().getHostName());
+		out.println( ((Socket)RTable[i][SOCKET]).getPort() );
+		out.println( ((Socket)RTable[i][SOCKET]).getInetAddress().getHostName() );
 	}
 	
 	private void writeClientData(String[] userRecord) {
