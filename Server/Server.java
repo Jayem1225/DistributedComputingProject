@@ -4,17 +4,17 @@ import java.io.*;
 public class Server {
 	// Constants
 	final static int IP = 0;
-   	final static int SOCKET = 1;
-   	final static int USERNAME = 2;
-   	final static String SERVER_ID = "__SERVER__";
+	final static int SOCKET = 1;
+	final static int USERNAME = 2;
+	final static String SERVER_ID = "__SERVER__";
    	
-   	static boolean serverConnected;
-    static int socketNumber;
-    static int index;
-    static Object [][] RoutingTable;
-   	static ServerSocket serverSocket;
-   	static Socket clientSocket;
-   	static BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
+	static boolean serverConnected;
+	static int socketNumber;
+	static int index;
+	static Object [][] RoutingTable;
+	static ServerSocket serverSocket;
+	static Socket clientSocket;
+	static BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
 
 	// Assists in capturing input from the user.
 	private static String getUserInput() {
@@ -87,12 +87,12 @@ public class Server {
 		for (int i = 0; i<RoutingTable.length; ++i) {
 			if (RoutingTable[i][USERNAME].equals(SERVER_ID)) {
 				++count;
-	    		System.out.println();
-	    		System.out.println(" SERVER INFO ");
-	    		System.out.println("=============");
-	    		System.out.println("IP Address:\t" + RoutingTable[i][IP]);
-	    		System.out.println("Socket:\t" + RoutingTable[i][SOCKET]);
-	    		System.out.println();
+	    			System.out.println();
+	    			System.out.println(" SERVER INFO ");
+	    			System.out.println("=============");
+	    			System.out.println("IP Address:\t" + RoutingTable[i][IP]);
+	    			System.out.println("Socket:\t" + RoutingTable[i][SOCKET]);
+	    			System.out.println();
 			}
 		}
 		
