@@ -1,51 +1,52 @@
-   import java.awt.image.BufferedImage;
-   import java.io.*;
-   import java.net.*;
+import java.awt.image.BufferedImage;
+import java.io.*;
+import java.net.*;
 
 import javax.imageio.ImageIO;
 
-    public class Client {
-		// Constants
-		final static int IP = 0;
-	   	final static int SOCKET = 1;
-	   	final static int HOSTNAME = 2;
 
-	   	static DatagramSocket dataSocket;
-	   	static Socket serverSocket;
-	   	static BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
-		static BufferedReader serverInput;
-		static PrintWriter serverOutput;
-		static boolean serverConnected;
-		static int dataPort;
-		static String username;
+public class Client {
+	// Constants
+	final static int IP = 0;
+	final static int SOCKET = 1;
+	final static int HOSTNAME = 2;
+
+	static BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
+	static BufferedReader serverInput;
+	static DatagramSocket dataSocket;
+	static Socket serverSocket;
+	static PrintWriter serverOutput;
+	static int dataPort;
+	static boolean serverConnected;
+	static String username;
 		
-		// Handles initial connection to peer server
+	// Handles initial connection to peer server
     	private static Socket connectToServer() throws IOException {
     		Socket socket;
     		
-			System.out.println("Please enter the hostname of the server: ");
-			String hostName = getUserInput();
-			System.out.println("Please enter the socket for connection to " + hostName + ": ");
-		    int socketNum = Integer.parseInt(getUserInput());
+		System.out.println("Please enter the hostname of the server: ");
+		String hostName = getUserInput();
+		System.out.println("Please enter the socket for connection to " + hostName + ": ");
+		int socketNum = Integer.parseInt(getUserInput());
     		System.out.println("Attempting to connect to server " + hostName + " on port number " + socketNum + "... ");
     		
     		// Tries to connect to the ServerRouter
-            try { socket = new Socket(hostName, socketNum); } 
-            catch (UnknownHostException e) {
-            	System.err.println("Don't know about device: " + hostName);
-                return null;
-            } 
-            catch (IOException e) {
-            	System.err.println("Couldn't get I/O for the connection to: " + hostName);
-                return null;
-            }
+        	try { socket = new Socket(hostName, socketNum); } 
+		catch (UnknownHostException e) {
+        		System.err.println("Don't know about device: " + hostName);
+			return null;
+            	} 
+            	catch (IOException e) {
+            		System.err.println("Couldn't get I/O for the connection to: " + hostName);
+                	return null;
+		}
             
-            System.out.println("Connection Successful!");
-            return socket;
-    	}
+            	System.out.println("Connection Successful!");
+            	return socket;
+	}
 
     	private static void initializeServerConnection() {
-			try { serverSocket = connectToServer(); }
+		try { serverSocket = connectToServer(); }
 	    	catch (IOException e){
 		    	System.out.println("Connection Failed!");
 		    	System.out.println("Ensure server crudentials are correct and try again.");
@@ -58,13 +59,13 @@ import javax.imageio.ImageIO;
 		    	// Give server username for server record
     		   	serverOutput.println(username);
     		   	serverConnected = true;
-		    }
-		    catch (IOException e) {
+		}
+		catch (IOException e) {
 		    	System.err.println("Fatal Error: Lost connection to Server!");
 		    	System.err.println("Please try to re-establish connection. ");
 		    	serverConnected = false;
 		    	return;
-		    }
+		}
     	}
 		
     	// Assists in capturing input from the user.
@@ -99,11 +100,12 @@ import javax.imageio.ImageIO;
     			System.err.println("Fatal error! Server connection lost!");
     			serverConnected = false;
     		}
-			//System.out.println("IP: " + connectData[IP]);
-			//System.out.println("Socket: " + connectData[SOCKET]);
-			//System.out.println("Host Name: " + connectData[HOSTNAME]);
+		
+		System.out.println("IP: " + connectData[IP]);
+		System.out.println("Socket: " + connectData[SOCKET]);
+		System.out.println("Host Name: " + connectData[HOSTNAME]);
     		
-			return connectData;
+		return connectData;
     	}
     	
     	// Sends image file to user connected to socket.
@@ -217,39 +219,39 @@ import javax.imageio.ImageIO;
     			while (!serverConnected)
     				initializeServerConnection();
     	   
-    			// Menu
-    			printMenu();
-    			switch ( Integer.parseInt(getUserInput()) ) {
-    			case 1:
-    				// Send file to user
-    				findAndSendImageToUser();
-    				break;
-    			case 2:
-    				// Print system connection info
-    				printSystemInfo();
-    				break;
-    			case 3:
-    				// Print server connection info
-    				try {
-    					printServerInfo();
-    				}
-    				catch (IOException e) {
-    					serverConnected = false;
-    				}
-    				break;
-    			case 4:
-    				// Exit program
-    				System.out.println();
-    				System.out.println("Goodbye!");
-    				done = true;
-    				break;
-    			}
+			// Menu
+			printMenu();
+			switch ( Integer.parseInt(getUserInput()) ) {
+				case 1:
+					// Send file to user
+					findAndSendImageToUser();
+					break;
+				case 2:
+					// Print system connection info
+					printSystemInfo();
+					break;
+				case 3:
+					// Print server connection info
+					try {
+						printServerInfo();
+					}
+					catch (IOException e) {
+						serverConnected = false;
+					}
+					break;
+				case 4:
+					// Exit program
+					System.out.println();
+					System.out.println("Goodbye!");
+					done = true;
+					break;
+			}
     		}
     		
-			// closing connections
+		// closing connections
     		dataSocket.close();
-			serverInput.close();
-			serverOutput.close();
-			serverSocket.close();
-      }	
-   }
+		serverInput.close();
+		serverOutput.close();
+		serverSocket.close();
+	}	
+}
